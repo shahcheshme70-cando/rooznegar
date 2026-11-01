@@ -1,0 +1,37 @@
+{
+  "people": [
+    {"name": "مدیر", "role": "admin", "tz": "Asia/Tehran"},
+    {"name": "احمد طهماسبی", "daily_value": 30, "line": "گرافیک", "tz": "Asia/Tehran",
+     "rhythm": {"plan": "07:00", "nudge": "09:40", "noon": "12:30", "report": "16:30"}},
+    {"name": "حسن جعفری‌نیا", "daily_value": 20, "line": "گرافیک", "tz": "Asia/Tehran",
+     "rhythm": {"plan": "08:00", "report": "17:00"}},
+    {"name": "ایلیا", "line": "گرافیک", "tz": "Asia/Tehran", "rhythm": {"report": "17:00"}},
+    {"name": "نسیم", "line": "محتوا و هماهنگی", "tz": "Asia/Tehran",
+     "rhythm": {"plan": "08:00", "report": "17:00"}},
+    {"name": "نیما", "line": "محتوا و هماهنگی", "tz": "Asia/Tehran",
+     "rhythm": {"plan": "08:00", "report": "17:00"}},
+    {"name": "علیرضا حاجی سامی", "daily_value": 80, "line": "ساخت", "channel": "bale", "tz": "Asia/Tehran",
+     "rhythm": {"report": "19:00"}},
+    {"name": "جواد داوودی", "daily_value": 30, "line": "محصولات دیجیتال", "tz": "Asia/Tehran", "rhythm": {"report": "18:00"}},
+    {"name": "مارال", "role": "finance", "line": "مالی", "tz": "Asia/Tehran"}
+  ],
+  "projects": [
+    {"id": "sanandaj", "name": "حرف نو سنندج (اجرا)", "sub": "دفتر تبلیغات کردستان"},
+    {"id": "khane", "name": "نمایشگاه خانه‌تکانی", "sub": "۴۲ تابلو · حوزهٔ خواهران"},
+    {"id": "khane_book", "name": "کتاب کار خانه‌تکانی"},
+    {"id": "qom3", "name": "سالن ۳ حرف نو قم", "sub": "۶ ایستگاه"},
+    {"id": "hall8", "name": "سالن ۸ حرف نو", "sub": "۴ ایستگاه"},
+    {"id": "jihad", "name": "نمایشگاه جهاد تبیین"},
+    {"id": "armani", "name": "محلهٔ ارمانی"},
+    {"id": "shahrekord", "name": "مرکز تعاملی شهرکرد"},
+    {"id": "mashhad", "name": "حرف نو مشهد"},
+    {"id": "hijab", "name": "بستهٔ حجاب"},
+    {"id": "rahyar", "name": "پلتفرم راهیار", "sub": "بنیاد برکت"},
+    {"id": "hezar", "name": "بوم هزار مشعل"},
+    {"id": "bargozar", "name": "بارگذار"}
+  ],
+  "tasks": [
+    {"person": "علیرضا حاجی سامی", "project": "حرف نو سنندج (اجرا)", "title": "لایت‌باکس سنندج", "kind": "metric",
+     "unit": "متر", "daily_target": 65, "total": 518, "priority": 10}
+  ]
+}

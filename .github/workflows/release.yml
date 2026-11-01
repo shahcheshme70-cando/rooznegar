@@ -1,0 +1,40 @@
+name: release
+# Push a tag like v0.9.1 → test, build linux binaries, publish a GitHub release.
+# The server's rooznegar-update.timer installs the newest release by itself.
+on:
+  push:
+    tags: ['v*']
+permissions:
+  contents: write
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.24.x'
+      - name: test
+        run: go vet ./... && go test -count=1 ./...
+      - name: build
+        run: |
+          V="${GITHUB_REF_NAME#v}"
+          grep -q "^## $V\$" CHANGELOG.md || { echo "CHANGELOG.md needs a '## $V' section"; exit 1; }
+          grep -q "var version = \"$V\"" main.go || { echo "main.go version is not $V"; exit 1; }
+          mkdir -p dist
+          for A in amd64 arm64; do
+            CGO_ENABLED=0 GOOS=linux GOARCH=$A go build -trimpath -ldflags "-s -w -X main.version=$V" -o dist/rooznegar-linux-$A .
+          done
+          (cd dist && sha256sum rooznegar-linux-* > SHA256SUMS)
+          awk -v v="## $V" '$0==v{f=1;next} /^## /{f=0} f' CHANGELOG.md > notes.md
+      - name: publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" dist/* --title "$GITHUB_REF_NAME" --notes-file notes.md
+      # status markers that can be seen with plain git (git ls-remote --tags)
+      - name: mark ok
+        if: success()
+        run: git tag "built-$GITHUB_REF_NAME" && git push origin "built-$GITHUB_REF_NAME"
+      - name: mark failed
+        if: failure()
+        run: git tag "failed-$GITHUB_REF_NAME" && git push origin "failed-$GITHUB_REF_NAME"

@@ -1,0 +1,38 @@
+{
+  "listen": "127.0.0.1:8095",
+  "base_url": "https://rooznegar.example.ir",
+  "data_dir": "/var/lib/rooznegar",
+
+  "telegram_token": "",
+  "bale_token": "",
+
+  "anthropic_key": "",
+  "model": "claude-haiku-5-5",
+  "effort": "low",
+  "monthly_budget_usd": 5,
+  "price_in_per_m": 0.10,
+  "price_out_per_m": 0.50,
+  "noon_ai": false,
+  "batch_seconds": 15,
+
+  "telegram_files_chat": 0,
+  "archive_reports": true,
+  "bale_files_chat": 0,
+
+  "bargozar_url": "https://files.ghese-agha.ir",
+  "bargozar_user": "",
+  "bargozar_pass": "",
+
+  "stt_url": "",
+  "stt_key": "",
+  "stt_model": "whisper-1",
+
+  "manager_tz": "Asia/Tehran",
+  "plan_draft_time": "20:30",
+  "summary_time": "20:45",
+  "unapproved_plan": "wait",
+  "max_plan_items": 3,
+  "edit_window_min": 10,
+  "followup_reask_hours": 24,
+  "below_target_days": 2
+}
