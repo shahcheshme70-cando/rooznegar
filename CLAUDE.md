@@ -8,10 +8,10 @@
 2. `go vet ./... && go test -count=1 -race ./...` باید سبز باشد.
 3. نسخه را بالا ببر: `var version = "X.Y.Z"` در `main.go` و یک بخش `## X.Y.Z` در بالای `CHANGELOG.md`
    (خطهای آن بعد از به‌روزرسانی برای مدیر در تلگرام فرستاده می‌شود: کوتاه، فارسی، به زبان کاربر، بدون اصطلاح فنی).
-4. commit روی `main`، بعد tag و push:
-   `git tag vX.Y.Z && git push origin main vX.Y.Z`
-5. GitHub Actions (`.github/workflows/release.yml`) تست می‌کند، باینری لینوکس amd64/arm64 و `SHA256SUMS` را می‌سازد و Release منتشر می‌کند.
-   نتیجه را با `git ls-remote --tags origin` ببین: tag `built-vX.Y.Z` یعنی ساخته شد، `failed-vX.Y.Z` یعنی شکست.
+4. commit و push روی `main` (`git push origin main`). push کردن tag از این محیط بسته است و لازم هم نیست.
+5. GitHub Actions (`.github/workflows/release.yml`) روی هر push تست می‌گیرد؛ اگر برای نسخهٔ `main.go` هنوز Release نیست،
+   باینری لینوکس amd64/arm64 و `SHA256SUMS` را می‌سازد و Release `vX.Y.Z` منتشر می‌کند.
+   نتیجه را با `git ls-remote --tags origin` ببین: `built-vX.Y.Z` یعنی منتشر شد؛ `failed-<sha>` یعنی تست یا ساخت شکست خورد.
 6. روی سرور `rooznegar-update.timer` (root، هر ۵ دقیقه) `rooznegar self-update` را اجرا می‌کند:
    دانلود، چک SHA-256، جایگزینی، restart و چک `/healthz`. اگر نسخهٔ تازه بالا نیاید، نسخهٔ قبلی برمی‌گردد و به مدیر خبر داده می‌شود.
 7. بررسی: `curl -s https://rooznegar.cando.click/healthz` → `{"ok":true,"version":"X.Y.Z"}`

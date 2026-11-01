@@ -1,11 +1,15 @@
 name: release
-# Push a tag like v0.9.1 → test, build linux binaries, publish a GitHub release.
-# The server's rooznegar-update.timer installs the newest release by itself.
+# Every push to main is tested. When main.go's version has no release yet, binaries are built
+# and a GitHub release vX.Y.Z is published; the server's rooznegar-update.timer installs it.
 on:
   push:
-    tags: ['v*']
+    branches: [main]
+  workflow_dispatch:
 permissions:
   contents: write
+concurrency:
+  group: release
+  cancel-in-progress: false
 jobs:
   release:
     runs-on: ubuntu-latest
@@ -15,12 +19,20 @@ jobs:
         with:
           go-version: '1.24.x'
       - name: test
-        run: go vet ./... && go test -count=1 ./...
-      - name: build
+        run: go vet ./... && go test -count=1 -race ./...
+      - name: version
+        id: v
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          V="${GITHUB_REF_NAME#v}"
+          V=$(sed -n 's/^var version = "\(.*\)"$/\1/p' main.go)
+          echo "v=$V" >> "$GITHUB_OUTPUT"
+          if gh release view "v$V" >/dev/null 2>&1; then echo "new=no" >> "$GITHUB_OUTPUT"; else echo "new=yes" >> "$GITHUB_OUTPUT"; fi
+      - name: build
+        if: steps.v.outputs.new == 'yes'
+        run: |
+          V="${{ steps.v.outputs.v }}"
           grep -q "^## $V\$" CHANGELOG.md || { echo "CHANGELOG.md needs a '## $V' section"; exit 1; }
-          grep -q "var version = \"$V\"" main.go || { echo "main.go version is not $V"; exit 1; }
           mkdir -p dist
           for A in amd64 arm64; do
             CGO_ENABLED=0 GOOS=linux GOARCH=$A go build -trimpath -ldflags "-s -w -X main.version=$V" -o dist/rooznegar-linux-$A .
@@ -28,13 +40,14 @@ jobs:
           (cd dist && sha256sum rooznegar-linux-* > SHA256SUMS)
           awk -v v="## $V" '$0==v{f=1;next} /^## /{f=0} f' CHANGELOG.md > notes.md
       - name: publish
+        if: steps.v.outputs.new == 'yes'
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "$GITHUB_REF_NAME" dist/* --title "$GITHUB_REF_NAME" --notes-file notes.md
-      # status markers that can be seen with plain git (git ls-remote --tags)
+        run: gh release create "v${{ steps.v.outputs.v }}" dist/* --target "$GITHUB_SHA" --title "v${{ steps.v.outputs.v }}" --notes-file notes.md
+      # status markers visible with plain git: git ls-remote --tags origin
       - name: mark ok
-        if: success()
-        run: git tag "built-$GITHUB_REF_NAME" && git push origin "built-$GITHUB_REF_NAME"
+        if: success() && steps.v.outputs.new == 'yes'
+        run: git tag "built-v${{ steps.v.outputs.v }}" && git push origin "built-v${{ steps.v.outputs.v }}"
       - name: mark failed
         if: failure()
-        run: git tag "failed-$GITHUB_REF_NAME" && git push origin "failed-$GITHUB_REF_NAME"
+        run: git tag "failed-$GITHUB_SHA" && git push origin "failed-$GITHUB_SHA"
