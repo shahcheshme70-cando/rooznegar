@@ -24,7 +24,7 @@ import (
 )
 
 // version is set at build time by the release workflow (-ldflags "-X main.version=...").
-var version = "0.9.0"
+var version = "0.9.1"
 
 func usage() {
 	fmt.Fprint(os.Stderr, `روزنگار `+version+`

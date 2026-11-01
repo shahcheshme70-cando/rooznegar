@@ -456,9 +456,9 @@ func (a *App) summaryText(d *Data, viewer *Person, mn time.Time) (string, [][]Bu
 			continue
 		}
 		if l.idle() {
-			idle = append(idle, firstName(l.P))
+			idle = append(idle, realFirst(l.P))
 		} else if l.heavy() {
-			s := firstName(l.P) + " (" + fa(l.Ready) + " کار باز"
+			s := realFirst(l.P) + " (" + fa(l.Ready) + " کار باز"
 			if l.Overdue > 0 {
 				s += "، " + fa(l.Overdue) + " عقب‌افتاده"
 			}
