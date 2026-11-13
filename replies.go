@@ -85,7 +85,7 @@ func (a *App) forwardAnswer(d *Data, p *Person, f *Followup, text string, voice 
 	} else {
 		fw = notifyAdmins(d, body, nil)
 	}
-	outs = append(outs, relay(fw, p.ID)...)
+	outs = append(outs, relayCC(d, fw, p.ID)...)
 	if first {
 		ack := "رساندم ✔"
 		if strings.Contains(text, "؟") || strings.Contains(text, "?") {
@@ -120,6 +120,37 @@ func relay(outs []Out, personID string) []Out {
 			}
 			d.Relays = append(d.Relays, &Relay{Chat: chat, MsgID: id, PersonID: personID, At: time.Now()})
 		}
+	}
+	return outs
+}
+
+// relayCC relays to managers like relay, and sends a plain copy to the person's CC list.
+func relayCC(d *Data, outs []Out, personID string) []Out {
+	outs = relay(outs, personID)
+	if len(outs) == 0 {
+		return outs
+	}
+	return append(outs, ccOuts(d, personID, strings.TrimSuffix(outs[0].Text, replyHint), outs)...)
+}
+
+// ccOuts: a copy of text for everyone on personID's CC list who is linked, active and not already a recipient.
+func ccOuts(d *Data, personID, text string, already []Out) []Out {
+	p := d.Person(personID)
+	if p == nil || len(p.CC) == 0 || strings.TrimSpace(text) == "" {
+		return nil
+	}
+	seen := map[int64]bool{p.ChatID: true}
+	for _, o := range already {
+		seen[o.Chat] = true
+	}
+	var outs []Out
+	for _, id := range p.CC {
+		c := d.Person(id)
+		if c == nil || !c.Active || c.ChatID == 0 || seen[c.ChatID] {
+			continue
+		}
+		seen[c.ChatID] = true
+		outs = append(outs, outTo(c, "📋 نسخه برای شما\n"+text, nil))
 	}
 	return outs
 }

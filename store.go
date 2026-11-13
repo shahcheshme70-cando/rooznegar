@@ -43,6 +43,8 @@ type Person struct {
 	DailyValue float64 `json:"daily_value"`
 	NoTune     bool    `json:"no_tune"` // the bot must not adjust this person's rhythm by itself
 	Nick       string  `json:"nick"`    // what they asked to be called
+	// CC: ids of people who get a copy of this person's reports and of whatever the bot relays from them to managers
+	CC []string `json:"cc,omitempty"`
 }
 
 type Project struct {

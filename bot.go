@@ -557,7 +557,21 @@ func (a *App) processText(ctx context.Context, p *Person, text string, voice boo
 	a.flush(outs)
 }
 
+// applyReport saves a report and, when one was saved, sends a copy to the person's CC list.
 func (a *App) applyReport(d *Data, pp *Person, today, text string, voice bool, pr *ParsedReport) []Out {
+	n := len(d.Reports)
+	outs := a.applyReport0(d, pp, today, text, voice, pr)
+	if len(d.Reports) > n {
+		head := "📝 گزارش " + pp.Name
+		if voice {
+			head += " (صوتی)"
+		}
+		outs = append(outs, ccOuts(d, pp.ID, head+":\n"+text, outs)...)
+	}
+	return outs
+}
+
+func (a *App) applyReport0(d *Data, pp *Person, today, text string, voice bool, pr *ParsedReport) []Out {
 	p := d.Person(pp.ID)
 	if p == nil {
 		return nil
@@ -667,7 +681,7 @@ func (a *App) applyReport(d *Data, pp *Person, today, text string, voice bool, p
 				if t := d.Task(x.TaskID); t != nil {
 					tt = " (" + t.Title + ")"
 				}
-				outs = append(outs, relay(notifyAdmins(d, "🔴 گره از "+p.Name+tt+":\n"+x.Text+replyHint, nil), p.ID)...)
+				outs = append(outs, relayCC(d, notifyAdmins(d, "🔴 گره از "+p.Name+tt+":\n"+x.Text+replyHint, nil), p.ID)...)
 			}
 		}
 		for _, o := range pr.Other {
@@ -863,11 +877,11 @@ func (a *App) answerAwaiting(ctx context.Context, p *Person, today, awaiting, ta
 			if t := d.Task(taskID); t != nil {
 				tt = " (" + t.Title + ")"
 			}
-			outs = append(outs, relay(notifyAdmins(d, "🔴 گره از "+p.Name+tt+":\n"+text+replyHint, nil), p.ID)...)
+			outs = append(outs, relayCC(d, notifyAdmins(d, "🔴 گره از "+p.Name+tt+":\n"+text+replyHint, nil), p.ID)...)
 			outs = append(outs, outTo(p, "به مدیر رساندم. تا جواب بیاید، اگر کار دیگری از برنامه آماده است سراغ آن برو.", nil))
 		case awaiting == "question":
 			ds.Awaiting = ""
-			outs = append(outs, relay(notifyAdmins(d, "❔ سؤال "+p.Name+":\n"+text+replyHint, nil), p.ID)...)
+			outs = append(outs, relayCC(d, notifyAdmins(d, "❔ سؤال "+p.Name+":\n"+text+replyHint, nil), p.ID)...)
 			outs = append(outs, outTo(p, "سؤالت به مدیر رسید.", nil))
 		case strings.HasPrefix(awaiting, "why:"):
 			ds.Awaiting = ""
@@ -882,9 +896,9 @@ func (a *App) answerAwaiting(ctx context.Context, p *Person, today, awaiting, ta
 			if f := d.Followup(strings.TrimPrefix(awaiting, "fstuck:")); f != nil {
 				f.Answer = text
 				if by := d.Person(f.By); by != nil && by.ChatID != 0 {
-					outs = append(outs, relay([]Out{outTo(by, "🔴 "+p.Name+" دربارهٔ «"+shorten(f.Question, 60)+"» گیر دارد:\n"+text+replyHint, nil)}, p.ID)...)
+					outs = append(outs, relayCC(d, []Out{outTo(by, "🔴 "+p.Name+" دربارهٔ «"+shorten(f.Question, 60)+"» گیر دارد:\n"+text+replyHint, nil)}, p.ID)...)
 				} else {
-					outs = append(outs, relay(notifyAdmins(d, "🔴 "+p.Name+" دربارهٔ «"+shorten(f.Question, 60)+"» گیر دارد:\n"+text+replyHint, nil), p.ID)...)
+					outs = append(outs, relayCC(d, notifyAdmins(d, "🔴 "+p.Name+" دربارهٔ «"+shorten(f.Question, 60)+"» گیر دارد:\n"+text+replyHint, nil), p.ID)...)
 				}
 			}
 			outs = append(outs, outTo(p, "رساندم. ممنون.", nil))
@@ -1063,9 +1077,9 @@ func (a *App) handleCallback(ctx context.Context, m *Messenger, cb *tgCallback) 
 			} else {
 				msg := fmt.Sprintf("%s: «%s» → %s", p.Name, shorten(f.Question, 80), lbl)
 				if by := d.Person(f.By); by != nil && by.ChatID != 0 {
-					outs = append(outs, relay([]Out{outTo(by, msg, nil)}, p.ID)...)
+					outs = append(outs, relayCC(d, []Out{outTo(by, msg, nil)}, p.ID)...)
 				} else {
-					outs = append(outs, relay(notifyAdmins(d, msg, nil), p.ID)...)
+					outs = append(outs, relayCC(d, notifyAdmins(d, msg, nil), p.ID)...)
 				}
 			}
 		case "a": // approval (admins only)
@@ -1168,6 +1182,7 @@ func (a *App) fastPath(p *Person, today, text string) bool {
 		ds.Reported, ds.Awaiting, ds.Started, ds.LastReport = true, "", true, a.Now()
 		a.stamp(ds, true, true)
 		d.Reports = append(d.Reports, &Report{ID: newID(), PersonID: p.ID, Date: today, Text: text, At: a.Now()})
+		outs = append(outs, ccOuts(d, p.ID, "📝 گزارش "+p.Name+":\n"+text, nil)...)
 		l := fmt.Sprintf("ثبت شد: 📏 %s: %s %s", mt.Title, fa(v), mt.Unit)
 		if mt.DailyTarget > 0 {
 			l += " از " + fa(mt.DailyTarget)
@@ -1241,7 +1256,7 @@ func (a *App) notReport(d *Data, p *Person, text string, pr *ParsedReport) []Out
 			ack = "ممنون که گفتی؛ رسید و درستش می‌کنیم."
 		}
 	case "question":
-		outs = append(outs, relay(notifyAdmins(d, "❔ "+p.Name+":\n"+text+replyHint, nil), p.ID)...)
+		outs = append(outs, relayCC(d, notifyAdmins(d, "❔ "+p.Name+":\n"+text+replyHint, nil), p.ID)...)
 		d.Log("question", p.ID, "", text)
 		if ack == "" {
 			ack = "به مدیر رساندم؛ جوابش همین‌جا می‌آید."

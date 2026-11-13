@@ -96,7 +96,7 @@ func TestCmpVersion(t *testing.T) {
 			t.Errorf("%s vs %s = %d", c.a, c.b, g)
 		}
 	}
-	if !strings.Contains(latestChanges(), "به‌روزرسانی خودکار") {
+	if !strings.Contains(latestChanges(), "•") {
 		t.Error("changelog not embedded")
 	}
 }

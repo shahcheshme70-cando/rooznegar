@@ -151,6 +151,11 @@ func (a *App) markDone(d *Data, t *Task, by string) (outs []Out) {
 	now := a.Now()
 	t.Status, t.Progress, t.DoneAt, t.UpdatedAt = "done", "done", &now, now
 	d.Log("done", t.PersonID, t.ID, t.Title)
+	if by == t.PersonID {
+		if p := d.Person(by); p != nil {
+			outs = append(outs, ccOuts(d, p.ID, "✔ "+p.Name+": «"+t.Title+"» تمام شد", nil)...)
+		}
+	}
 	for _, n := range d.Tasks {
 		if n.After == t.ID && n.Status == "open" {
 			n.Ready = true

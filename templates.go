@@ -188,6 +188,7 @@ input:focus,select:focus,textarea:focus,.btn:focus-visible,a:focus-visible{outli
 <label>گزارش عصر<input name="report" value="{{.Rhythm.Report}}" dir="ltr" placeholder="16:30"></label>
 </div>
 <div class="checks"><span class="muted">روزهای تعطیل:</span>{{range $.Weekdays}}<label><input type="checkbox" name="off" value="{{latinI .N}}" {{if has $.OffSet .N}}checked{{end}}> {{.Name}}</label>{{end}}</div>
+{{$me := .ID}}<div class="checks"><span class="muted">نسخهٔ گزارش‌ها و پیام‌هایش (همان لحظه) برای:</span>{{range $.People}}{{if ne .ID $me}}<label><input type="checkbox" name="cc" value="{{.ID}}" {{if index $.CCSet .ID}}checked{{end}}> {{.Name}}</label>{{end}}{{end}}</div>
 <label>یادداشت مدیریتی (فقط برای شما و دستیار؛ به خودش نشان داده نمی‌شود)<textarea name="notes">{{.Notes}}</textarea></label>
 {{if .ID}}<div class="note">{{if .ChatID}}وصل است ({{chan .Channel}}).{{else}}هنوز وصل نشده. کد اتصال: <span class="code">{{.LinkCode}}</span> را برایش بفرستید تا در ربات {{chan .Channel}} بزند.{{end}}</div>{{end}}
 <div class="row"><button class="btn primary">ذخیره</button><a class="btn" href="/people">انصراف</a></div>

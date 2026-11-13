@@ -129,7 +129,57 @@ func init() {
 		{Name: "set_plan", Description: "تعیین کارهای برنامهٔ فردای یک نفر (task_ids با کاما) و یک خط یادداشت. برنامه سر ساعت صبح آن نفر خودکار می‌رود.",
 			InputSchema: obj(map[string]any{"person": str("نام نفر"), "task_ids": str("شناسه‌ها با کاما، به ترتیب اولویت"), "note": str("یک خط برای او"), "date": str("YYYY-MM-DD، پیش‌فرض فردا")}, "person", "task_ids"),
 			roles:       "admin senior", run: toolSetPlan},
+		{Name: "set_cc", Description: "قاعدهٔ نسخه: از این به بعد گزارش‌ها، جواب‌ها، گره‌ها و «انجام شد»های یک نفر همان لحظه برای چند نفر دیگر هم برود. to: نام‌ها با کاما؛ خالی یعنی خاموش.",
+			InputSchema: obj(map[string]any{"person": str("نام نفری که گزارش می‌دهد"), "to": str("نام گیرنده‌های نسخه، با کاما؛ خالی = خاموش")}, "person"),
+			roles:       "admin", run: toolSetCC},
 	}
+}
+
+func ccNames(d *Data, p *Person) string {
+	var names []string
+	for _, id := range p.CC {
+		if c := d.Person(id); c != nil {
+			names = append(names, c.Name)
+		}
+	}
+	return strings.Join(names, "، ")
+}
+
+func toolSetCC(a *App, u *User, args map[string]any) (string, error) {
+	var msg string
+	err := a.Store.Do(func(d *Data) error {
+		p := d.PersonByName(argS(args, "person"))
+		if p == nil {
+			return fmt.Errorf("نفر پیدا نشد: %s", argS(args, "person"))
+		}
+		var ids []string
+		for _, n := range strings.FieldsFunc(argS(args, "to"), func(r rune) bool { return r == ',' || r == '،' }) {
+			if strings.TrimSpace(n) == "" {
+				continue
+			}
+			c := d.PersonByName(strings.TrimSpace(n))
+			if c == nil {
+				return fmt.Errorf("نفر پیدا نشد: %s", n)
+			}
+			if c.ID != p.ID {
+				ids = append(ids, c.ID)
+			}
+		}
+		p.CC = ids
+		d.Log("cc_set", p.ID, "", u.Name)
+		if len(ids) == 0 {
+			msg = "نسخهٔ گزارش‌های " + p.Name + " خاموش شد."
+		} else {
+			msg = "از این به بعد گزارش‌ها و جواب‌های " + p.Name + " همان لحظه برای " + ccNames(d, p) + " هم می‌رود."
+			for _, id := range ids {
+				if c := d.Person(id); c != nil && c.ChatID == 0 {
+					msg += "\n" + c.Name + " هنوز به ربات وصل نیست؛ تا وصل نشود چیزی برایش نمی‌رود."
+				}
+			}
+		}
+		return nil
+	})
+	return msg, err
 }
 
 func (a *App) mcpHandler(w http.ResponseWriter, r *http.Request) {
@@ -271,6 +321,9 @@ func toolPeople(a *App, u *User, _ map[string]any) (string, error) {
 			fmt.Fprintf(&sb, "- %s · %s%s · %s (%s) · ریتم: صبح %s، شروع %s، ظهر %s، عصر %s · %s\n", p.Name, roleLabels[p.Role],
 				map[bool]string{true: " · " + p.Line, false: ""}[p.Line != ""], map[string]string{"telegram": "تلگرام", "bale": "بله"}[p.Channel], st,
 				dash(p.Rhythm.Plan), dash(p.Rhythm.Nudge), dash(p.Rhythm.Noon), dash(p.Rhythm.Report), p.TZ)
+			if names := ccNames(d, p); names != "" {
+				fmt.Fprintf(&sb, "  نسخهٔ گزارش‌ها برای: %s\n", names)
+			}
 		}
 	})
 	return sb.String(), nil

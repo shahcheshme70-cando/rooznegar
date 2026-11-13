@@ -440,6 +440,11 @@ func (a *App) peoplePage(w http.ResponseWriter, r *http.Request, u *User) {
 			cp := *edit
 			m["Edit"] = &cp
 			m["OffSet"] = offSet(cp.Rhythm.Off)
+			cc := map[string]bool{}
+			for _, id := range cp.CC {
+				cc[id] = true
+			}
+			m["CCSet"] = cc
 		}
 		m["Weekdays"] = []struct {
 			N    int
@@ -522,6 +527,12 @@ func (a *App) peopleSave(w http.ResponseWriter, r *http.Request, u *User) {
 		p.Active = r.FormValue("active") == "1"
 		p.Rhythm.Plan, p.Rhythm.Nudge = validHM(r.FormValue("plan")), validHM(r.FormValue("nudge"))
 		p.Rhythm.Noon, p.Rhythm.Report = validHM(r.FormValue("noon")), validHM(r.FormValue("report"))
+		p.CC = nil
+		for _, id := range r.Form["cc"] {
+			if c := d.Person(id); c != nil && c.ID != p.ID {
+				p.CC = append(p.CC, c.ID)
+			}
+		}
 		p.Rhythm.Off = nil
 		for _, v := range r.Form["off"] {
 			if n, err := strconv.Atoi(v); err == nil && n >= 0 && n <= 6 {
